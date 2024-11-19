@@ -1,0 +1,8 @@
+sentence-transformers
+pinecone-client
+fastapi
+uvicorn
+python-dotenv
+nltk
+numpy
+pydantic
