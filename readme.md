@@ -1,94 +1,144 @@
 # Document Similarity Search System
 
-This system implements a similarity search functionality that allows users to find the most similar sentences from a whitepaper based on a query input. It uses sentence transformers for embedding generation and Pinecone as the vector database.
+This system allows users to search for the most similar text sentences from documents based on a query input. It uses vector embeddings and Pinecone vector database for efficient similarity search.
+
+## Features
+
+- PDF document processing
+- Text similarity search using vector embeddings
+- RESTful API with FastAPI
+- Docker support for easy deployment
 
 ## Prerequisites
 
-- Python 3.8+
-- Pinecone API key
+- Python 3.11+
 - Docker (optional)
+- Pinecone API key (sign up at [Pinecone](https://www.pinecone.io/))
 
 ## Installation
 
-1. Clone the repository and create a virtual environment:
+### Using Docker (Recommended)
+
+1. Clone the repository:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+git clone <repository-url>
+cd <repository-name>
+```
+
+2. Create `.env` file and add your Pinecone credentials:
+```bash
+cp .env.example .env
+# Edit .env with your actual credentials
+```
+
+3. Build and run with Docker Compose:
+```bash
+docker-compose up -d
+```
+
+The API will be available at `http://localhost:8000`
+
+### Local Development
+
+1. Create and activate a virtual environment:
+```bash
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
 2. Install dependencies:
 ```bash
-pip install sentence-transformers pinecone-client fastapi uvicorn python-dotenv nltk
+pip install -r requirements.txt
 ```
 
-3. Create a `.env` file in the project root with your Pinecone credentials:
-```
-PINECONE_API_KEY=your_api_key_here
-PINECONE_ENV=your_environment_here
+3. Create `.env` file and add your Pinecone credentials:
+```bash
+cp .env.example .env
+# Edit .env with your actual credentials
 ```
 
-## Running the Application
+4. Run the application:
+```bash
+uvicorn app.main:app --reload
+```
 
-1. Initialize the system with your document:
+## Usage
+
+The API provides two main endpoints:
+
+### 1. Add Document
+
+Upload a PDF document to be processed and indexed:
+
+```bash
+curl -X POST "http://localhost:8000/add_pdf" \
+  -H "accept: application/json" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@path/to/your/document.pdf"
+```
+
+Python example:
 ```python
-from main import initialize_system
+import requests
 
-with open('whitepaper.txt', 'r') as f:
-    document_text = f.read()
-initialize_system(document_text)
+with open('document.pdf', 'rb') as f:
+    files = {'file': ('document.pdf', f, 'application/pdf')}
+    response = requests.post('http://localhost:8000/add_pdf', files=files)
+print(response.json())
 ```
 
-2. Start the FastAPI server:
-```bash
-uvicorn main:app --reload
-```
+### 2. Search Similar Sentences
 
-3. The API will be available at `http://localhost:8000`
-
-## Using Docker
-
-1. Build the Docker image:
-```bash
-docker build -t similarity-search .
-```
-
-2. Run the container:
-```bash
-docker run -p 8000:8000 -e PINECONE_API_KEY=your_key -e PINECONE_ENV=your_env similarity-search
-```
-
-## API Usage
-
-Send a POST request to `/search` endpoint with your query:
+Search for sentences similar to your query:
 
 ```bash
 curl -X POST "http://localhost:8000/search" \
-     -H "Content-Type: application/json" \
-     -d '{"query": "What are the characteristics of tactical maturity?"}'
+  -H "accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is tactical maturity?"}'
 ```
 
-The response will contain the top 3 most similar sentences and their similarity scores:
+Python example:
+```python
+import requests
 
-```json
-[
-    {
-        "sentence": "Organizations at the tactical phase are exploring the potential of AI to deliver in the short term.",
-        "similarity_score": 0.85
-    },
-    {
-        "sentence": "Use cases tend to be narrow, and developers are typically leveraging exploratory data analysis (EDA) tools and ready-to-use AI and ML services for proofs of concept and prototyping.",
-        "similarity_score": 0.78
-    },
-    {
-        "sentence": "At this phase, organizations are aware of the promise of advanced analytics, but ML can be seen as unattainable, and for this reason, complex problems are outsourced.",
-        "similarity_score": 0.72
-    }
-]
+query = {"query": "What is tactical maturity?"}
+response = requests.post('http://localhost:8000/search', json=query)
+print(response.json())
 ```
+
+## API Documentation
+
+Once the server is running, you can access:
+- API documentation: `http://localhost:8000/docs`
+- Alternative documentation: `http://localhost:8000/redoc`
 
 ## Project Structure
 
-- `main.py`: Main application file containing the SimilaritySearchSystem class and FastAPI endpoints
-- `Dockerfile`: Docker configuration for containerization
-- `requirements.txt`: Python dependencies
-- `.env`: Environment variables (not included in repository)
+```
+similarity-search/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── schemas.py
+│   └── services/
+│       ├── __init__.py
+│       ├── pdf_processor.py
+│       └── similarity_search.py
+├── .env
+├── .env.example
+├── .gitignore
+├── docker-compose.yml
+├── Dockerfile
+├── README.md
+└── requirements.txt
+```
+
+## Environment Variables
+
+Required environment variables:
+- `PINECONE_API_KEY`: Your Pinecone API key
+- `PINECONE_ENVIRONMENT`: Your Pinecone environment
+- `PINECONE_INDEX_NAME`: Name for your Pinecone index (default: "document-search")
